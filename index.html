@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MEGA CLICKER v16.0</title>
+    <style>
+        :root { --accent: #0f0; --glow: rgba(0,255,0,0.5); --bg: #000; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); color: #0f0; font-family: 'Courier New', monospace; height: 100vh; overflow: hidden; display: flex; flex-direction: column; user-select: none; }
+        .header { padding: 10px; background: rgba(0,0,0,0.8); border-bottom: 1px solid var(--accent); text-align: center; flex-shrink: 0; }
+        h1 { font-size: 16px; text-shadow: 0 0 10px var(--accent); margin-bottom: 5px; }
+        .level-bar { background: rgba(0,0,0,0.5); border: 1px solid var(--accent); border-radius: 8px; padding: 5px; margin-bottom: 5px; }
+        .level-progress { height: 6px; background: #111; border-radius: 3px; overflow: hidden; }
+        .level-progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.2s; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+        .stat { background: rgba(0,0,0,0.5); border: 1px solid var(--accent); border-radius: 5px; padding: 5px; text-align: center; }
+        .stat .label { font-size: 8px; color: #aaa; display: block; }
+        .stat .value { font-size: 12px; font-weight: bold; color: var(--accent); }
+        .click-area { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; min-height: 0; }
+        #cookieBtn { font-size: 150px; background: transparent; border: none; cursor: pointer; filter: drop-shadow(0 0 40px var(--glow)); transition: transform 0.05s; outline: none; }
+        #cookieBtn:active { transform: scale(0.95); }
+        .tab-bar { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; padding: 10px; background: #000; border-top: 1px solid var(--accent); flex-shrink: 0; }
+        .tab { background: #000; border: 1px solid var(--accent); color: var(--accent); padding: 10px; border-radius: 8px; font-size: 16px; cursor: pointer; text-align: center; }
+        .tab:active { background: var(--accent); color: #000; }
+        .folder-btn { grid-column: span 6; margin-top: 5px; font-size: 20px; padding: 15px; }
+        .panel { display: none; position: fixed; bottom: 0; left: 0; width: 100%; height: 85vh; background: #000; border-top: 2px solid var(--accent); border-radius: 20px 20px 0 0; z-index: 100; padding: 15px; flex-direction: column; }
+        .panel.open { display: flex; }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .panel-title { font-size: 20px; font-weight: bold; color: var(--accent); }
+        .panel-close { background: #300; color: #f00; border: 1px solid #f00; border-radius: 50%; width: 30px; height: 30px; font-weight: bold; cursor: pointer; }
+        .panel-content { flex: 1; overflow-y: auto; }
+        .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .menu-btn { background: #000; border: 2px solid var(--accent); color: var(--accent); padding: 15px; border-radius: 10px; font-size: 12px; font-weight: bold; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; }
+        .menu-btn span:first-child { font-size: 24px; }
+        .my-factory-card { background: #050505; border: 1px solid #333; border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; }
+        .my-factory-btn { border: none; border-radius: 5px; padding: 10px; font-weight: bold; cursor: pointer; font-size: 12px; text-transform: uppercase; }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #000; border: 1px solid var(--accent); color: var(--accent); padding: 10px 20px; border-radius: 5px; z-index: 1000; font-size: 12px; display: none; box-shadow: 0 0 10px var(--accent); }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>MEGA CLICKER v16.0</h1>
+    <div class="level-bar">
+        <div id="lvlTitle" style="text-align:center; font-size:10px; margin-bottom:2px;">Уровень 1 (0/100)</div>
+        <div class="level-progress"><div class="level-progress-fill" id="lvlFill"></div></div>
+    </div>
+    <div class="stats-grid">
+        <div class="stat"><span class="label">ПЕЧЕНЬЕ</span><span class="value" id="statCookies">0</span></div>
+        <div class="stat"><span class="label">В СЕК</span><span class="value" id="statCps">0</span></div>
+        <div class="stat"><span class="label">ЗА КЛИК</span><span class="value" id="statCpc">1</span></div>
+        <div class="stat"><span class="label">КРИСТАЛЛЫ</span><span class="value" id="statCrystals">0</span></div>
+    </div>
+</div>
+
+<div class="click-area">
+    <button id="cookieBtn">🍪</button>
+</div>
+
+<div class="tab-bar">
+    <button class="tab" onclick="openPanel('shop')">🛒</button>
+    <button class="tab" onclick="openPanel('pets')">🐾</button>
+    <button class="tab" onclick="openPanel('relics')">🔮</button>
+    <button class="tab" onclick="openPanel('prestige')">✨</button>
+    <button class="tab" onclick="openPanel('achievements')">🏆</button>
+    <button class="tab" onclick="openPanel('minigames')">🎮</button>
+    <button class="tab" onclick="openPanel('daily')">📅</button>
+    <button class="tab" onclick="openPanel('craft')">🛠️</button>
+    <button class="tab" onclick="openPanel('stats')">📊</button>
+    <button class="tab" onclick="openPanel('settings')">⚙️</button>
+    <button class="tab" onclick="openPanel('cheats')">👑</button>
+    <button class="tab" onclick="openPanel('battlepass')">🎟️</button>
+    <button class="tab folder-btn" id="folderBtn" onclick="openHardcodedMenu()">📁</button>
+</div>
+
+<div class="panel" id="panel">
+    <div class="panel-header">
+        <div class="panel-title" id="panelTitle">Меню</div>
+        <button class="panel-close" onclick="closePanel()">X</button>
+    </div>
+    <div class="panel-content" id="panelContent"></div>
+</div>
+
+<div id="hardcoded-more-menu" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:200; flex-direction:column; padding:20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #0f0; padding-bottom:10px;">
+        <h2 style="color:#0f0;">📁 Дополнительные функции</h2>
+        <button onclick="document.getElementById('hardcoded-more-menu').style.display='none'" style="background:#300; color:#f00; border:1px solid #f00; border-radius:50%; width:30px; height:30px; font-weight:bold; cursor:pointer;">X</button>
+    </div>
+    <div class="menu-grid" style="overflow-y:auto; max-height:80vh; padding-right:5px;"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let state = {
+    cookies: 0, totalBaked: 0, clicks: 0, evoLevel: 1,
+    crystals: 0, cUpgrades: {}, pUpgrades: {}, skins: {owned:['skin0'], eq:'skin0'},
+    achievements: {}, prestige: 0, skills: {click:0, cps:0, mult:0}, pets: {}, relics: {},
+    inventory: {coal:0, copper:0, iron:0, gold:0, diamond:0}, lab: {dna: 0, clickMult: 0, cpsMult: 0, autoSpeed: 0},
+    dronesData: { miner: {lvl:0, baseCost:100}, clicker: {lvl:0, baseCost:250}, warrior: {lvl:0, baseCost:500} },
+    market: { prices: {coal:50, copper:250, iron:1000, gold:5000, diamond:25000} },
+    arena: { energy: 10, maxEnergy: 10, wins: 0, rating: 0 },
+    pvp: { wins: 0, losses: 0, medals: 0 },
+    bank: { v1:0, v2:0, v3:0, lastUpdate: Date.now(), lvl:1, loan:0, loanTime:0 },
+    cards: {}, quests: { coins:0, daily:[], lastReset:0, chainProgress:0 }, 
+    league: { claimed: [] }, wheel: { lastSpin: 0 }, 
+    settings: { sound: true, haptics: true }
+};
+
+function format(n) {
+    if (n >= 1e18) return (n/1e18).toFixed(2) + 'E';
+    if (n >= 1e15) return (n/1e15).toFixed(2) + 'Q';
+    if (n >= 1e12) return (n/1e12).toFixed(2) + 'T';
+    if (n >= 1e9) return (n/1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return (n/1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+    return Math.floor(n);
+}
+function showToast(msg) {
+    let t = document.getElementById('toast');
+    t.innerText = msg; t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 2000);
+}
+function playSound(freq, dur) {
+    if (!state.settings.sound) return;
+    try {
+        let ctx = new (window.AudioContext || window.webkitAudioContext)();
+        let osc = ctx.createOscillator();
+        let gain = ctx.createGain();
+        osc.frequency.value = freq; osc.type = 'square';
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + dur);
+    } catch(e) {}
+}
+function updateUI() {
+    document.getElementById('statCookies').innerText = format(state.cookies);
+    document.getElementById('statCrystals').innerText = format(state.crystals);
+    document.getElementById('statCpc').innerText = format(1 + (state.skills.click * 0.1));
+    
+    let need = state.evoLevel * 100;
+    if (state.evoLevel < 100) {
+        document.getElementById('lvlTitle').innerText = `Уровень ${state.evoLevel} (${state.clicks}/${need})`;
+        document.getElementById('lvlFill').style.width = Math.min(100, (state.clicks/need)*100) + '%';
+    } else {
+        document.getElementById('lvlTitle').innerText = 'Уровень 100 (MAX)';
+        document.getElementById('lvlFill').style.width = '100%';
+    }
+}
+document.getElementById('cookieBtn').addEventListener('click', () => {
+    let gain = 1 + (state.skills.click * 0.1);
+    state.cookies += gain;
+    state.totalBaked += gain;
+    state.clicks++;
+    
+    if (state.evoLevel < 100 && state.clicks >= state.evoLevel * 100) {
+        state.evoLevel++;
+        state.clicks = 0;
+        showToast(`⭐ Новый уровень: ${state.evoLevel}`);
+        playSound(800, 0.2);
+    }
+    
+    let r = Math.random() * 100;
+    let ore = 'coal';
+    if (r >= 99) ore = 'diamond'; else if (r >= 95) ore = 'gold'; else if (r >= 80) ore = 'iron'; else if (r >= 50) ore = 'copper';
+    state.inventory[ore] = (state.inventory[ore] || 0) + 1;
+    
+    updateUI();
+    playSound(400, 0.05);
+});
+
+function openHardcodedMenu() {
+    let menu = document.getElementById('hardcoded-more-menu');
+    let grid = menu.querySelector('.menu-grid');
+    grid.innerHTML = '';
+    
+    const buttons = [
+        { name: 'Арена', icon: '🥊', fn: 'openArenaMenu' },
+        { name: 'Заводы', icon: '🏭', fn: 'openFactoryMenu' },
+        { name: 'Battle Pass', icon: '🎟️', fn: 'openBattlePass' },
+        { name: 'Карточки', icon: '🃏', fn: 'openCardsMenu' },
+        { name: 'Квесты', icon: '📜', fn: 'openQuestMenu' },
+        { name: 'Казино', icon: '🎰', fn: 'openCasinoMenu' },
+        { name: 'Рынок', icon: '💱', fn: 'openMarketMenu' },
+        { name: 'Дерево', icon: '🌳', fn: 'openTreeMenu' },
+        { name: 'Лига', icon: '🏆', fn: 'openLeagueMenu' },
+        { name: 'PvP', icon: '⚔️', fn: 'openPvpMenu' },
+        { name: 'Бонус', icon: '🎁', fn: 'openBonusMenu' },
+        { name: 'Друзья', icon: '👥', fn: 'openFriendsMenu' },
+        { name: 'Скины', icon: '🎨', fn: 'openSkinsMenu' },
+        { name: 'Стата', icon: '📊', fn: 'openStatsMenu' },
+        { name: 'Ачивки', icon: '🏆', fn: 'openAchievementsMenu' },
+        { name: 'Банк', icon: '🏦', fn: 'openBankMenu' },
+        { name: 'Колесо', icon: '🎲', fn: 'openWheelMenu' },
+        { name: 'Инвентарь', icon: '🎒', fn: 'openInventoryMenu' },
+        { name: 'Дроны', icon: '🛸', fn: 'openDronesMenu' },
+        { name: 'Лаборатория', icon: '🧬', fn: 'openLabMenu' }
+    ];
+    
+    buttons.forEach(b => {
+        let el = document.createElement('button');
+        el.className = 'menu-btn';
+        el.innerHTML = `<span>${b.icon}</span><span>${b.name}</span>`;
+        el.onclick = () => {
+            menu.style.display = 'none';
+            if (typeof window[b.fn] === 'function') window[b.fn]();
+            else showToast(`Раздел ${b.name} в разработке`);
+        };
+        grid.appendChild(el);
+    });
+    menu.style.display = 'flex';
+}
+
+function openPanel(tab) {
+    let panel = document.getElementById('panel');
+    let title = document.getElementById('panelTitle');
+    let content = document.getElementById('panelContent');
+    panel.classList.add('open');
+    
+    if (tab === 'shop') { title.innerText = 'Магазин'; content.innerHTML = '<p>Улучшения клика и пассива.</p>'; }
+    else if (tab === 'settings') { title.innerText = 'Настройки'; content.innerHTML = '<p>Сброс прогресса и звуки.</p>'; }
+    else { title.innerText = tab.toUpperCase(); content.innerHTML = '<p>Раздел в разработке.</p>'; }
+}
+function closePanel() { document.getElementById('panel').classList.remove('open'); }
+
+  function showModal(html) {
+    let div = document.createElement('div');
+    div.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:300; display:flex; justify-content:center; align-items:center; padding:20px;';
+    div.innerHTML = `<div style="background:#050505; border:2px solid #0f0; border-radius:15px; padding:20px; width:100%; max-width:500px; color:#0f0; font-family:monospace; max-height:80vh; overflow-y:auto;">
+        ${html}
+        <button class="my-factory-btn" style="width:100%; margin-top:15px; background:#333; color:#fff;" onclick="this.parentElement.parentElement.remove()">Закрыть</button>
+    </div>`;
+    document.body.appendChild(div);
+}
+
+window.openFactoryMenu = function() {
+    let html = `<h3 style="text-align:center; color:#0f0;">🏭 Промышленный Терминал</h3>`;
+    html += `<div style="max-height:50vh; overflow-y:auto;">`;
+    for (let i = 0; i < 10; i++) {
+        let cost = Math.floor(50 * Math.pow(1.15, i));
+        html += `<div class="my-factory-card">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:24px;">🏭</span>
+                <div><b>Завод ${i+1}</b><br><span style="color:#0f0; font-size:11px;">+${format(cost/2)} в сек</span></div>
+            </div>
+            <button class="my-factory-btn" style="background:#ff0; color:#000;" onclick="showToast('Куплено!')">Купить (${format(cost)})</button>
+        </div>`;
+    }
+    html += `</div>`;
+    showModal(html);
+};
+
+window.openMarketMenu = function() {
+    let html = `<h3 style="text-align:center; color:#0f0;">💱 Торговый Рынок</h3>`;
+    html += `<div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">`;
+    for (let ore in state.market.prices) {
+        html += `<div style="background:#000; border:1px solid #0f0; padding:10px; border-radius:10px; display:flex; justify-content:space-between;">
+            <span>${ore.toUpperCase()}</span> <b style="color:#ff0;">${state.market.prices[ore]} 🍪</b>
+        </div>`;
+    }
+    html += `</div>`;
+    showModal(html);
+};
+
+window.openArenaMenu = function() {
+    let html = `<h3 style="text-align:center; color:#f00;">🥊 Колизей</h3><p style="text-align:center;">Побед: ${state.arena.wins}</p><button class="my-factory-btn" style="background:#f00; color:#fff; width:100%; margin-top:20px;" onclick="state.arena.wins++; showToast('Победа!');">В Бой!</button>`;
+    showModal(html);
+};
+window.openPvpMenu = function() { showModal('<h3 style="text-align:center; color:#0ff;">⚔️ PvP Арена</h3><p style="text-align:center;">В разработке...</p>'); };
+window.openTreeMenu = function() { showModal('<h3 style="text-align:center; color:#0f0;">🌳 Дерево Навыков</h3><p style="text-align:center;">В разработке...</p>'); };
+window.openLeagueMenu = function() { showModal('<h3 style="text-align:center; color:#ff0;">🏆 Лига</h3><p style="text-align:center;">В разработке...</p>'); };
+window.openBonusMenu = function() { showModal('<h3 style="text-align:center; color:#0f0;">🎁 Ежедневный Бонус</h3><p style="text-align:center;">В разработке...</p>'); };
+window.openFriendsMenu = function() { showModal('<h3 style="text-align:center; color:#0ff;">👥 Друзья</h3><p style="text-align:center;">В разработке...</p>'); };
+window.openSkinsMenu = function() { showModal('<h3 style="text-align:center; color:#f0f;">🎨 Скины</h3><p style="text-align:center;">В разработке...</p>'); };
+window.openStatsMenu = function() { showModal('<h3 style="text-align:center; color:#0ff;">📊 Статистика</h3><p style="text-align:center;">В разработке...</p>'); };
+window.openAchievementsMenu = function() { showModal('<h3 style="text-align:center; color:#ff0;">🏆 Ачивки</h3><p style="text-align:center;">В разработке...</p>'); };
+window.openBankMenu = function() { showModal('<h3 style="text-align:center; color:#0f0;">🏦 Банк</h3><p style="text-align:center;">В разработке...</p>'); };
+window.openWheelMenu = function() { showModal('<h3 style="text-align:center; color:#ff0;">🎲 Колесо</h3><p style="text-align:center;">В разработке...</p>'); };
+window.openInventoryMenu = function() { showModal('<h3 style="text-align:center; color:#0f0;">🎒 Инвентарь</h3><p style="text-align:center;">В разработке...</p>'); };
+window.openDronesMenu = function() { showModal('<h3 style="text-align:center; color:#0ff;">🛸 Дроны</h3><p style="text-align:center;">В разработке...</p>'); };
+window.openLabMenu = function() { showModal('<h3 style="text-align:center; color:#f0f;">🧬 Лаборатория</h3><p style="text-align:center;">В разработке...</p>'); };
+window.openCardsMenu = function() { showModal('<h3 style="text-align:center; color:#f0f;">🃏 Карточки</h3><p style="text-align:center;">В разработке...</p>'); };
+window.openQuestMenu = function() { showModal('<h3 style="text-align:center; color:#0f0;">📜 Квесты</h3><p style="text-align:center;">В разработке...</p>'); };
+window.openCasinoMenu = function() { showModal('<h3 style="text-align:center; color:#f00;">🎰 Казино</h3><p style="text-align:center;">В разработке...</p>'); };
+window.openBattlePass = function() { showModal('<h3 style="text-align:center; color:#f00;">🎟️ Battle Pass</h3><p style="text-align:center;">В разработке...</p>'); };
+updateUI();
+console.log("Игра загружена!");
+  </script>
+</body>
+</html>
+
+  
